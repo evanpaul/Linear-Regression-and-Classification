@@ -5,10 +5,15 @@ import math
 import numpy as np
 
 # Process data into three matrices (split into training and testing) corresponding to classification
-def process_data_set():
+def process_data_set(use_cols=(0,1,2,3)):
     # Parameters columns: x1, x2, x3, x4
-    x1, x2, x3, x4 = np.genfromtxt("iris.data", delimiter=",", usecols=(0, 1, 2, 3), unpack=True, dtype=float)
-    cols = [x1, x2, x3, x4]
+    print "Using parameters:", use_cols
+    a = np.genfromtxt("iris.data", delimiter=",", usecols=use_cols, unpack=True, dtype=float)
+
+    # Unpack the tuple into an array
+    cols = []
+    for i in range(num_feat):
+        cols.append(a[i])
 
     # Iris-setosa
     setosa_train_rows = []
@@ -77,41 +82,52 @@ def train(x):
     return mu, sigma
 # Gaussian probability density function
 def gaussian_pdf(x, mu, sigma):
-    P = num_feat  # dimensionality of x i.e. number of features
     # Just to be explicit that we're dealing with column vectors in this formulas
     x.shape = (num_feat, 1)
     mu.shape = (num_feat, 1)
     # The constant term isn't included since it isn't necessary
+
     a = -0.5 * np.transpose(x - mu)
-    b = np.asmatrix(a) * np.linalg.inv(sigma)
-    c = b * np.asmatrix(x - mu)
-    prob = math.exp(c)
+    b = np.asmatrix(a) * np.linalg.inv(sigma) #?
+    c = b * np.asmatrix(x - mu) #?
+
+    prob = (np.linalg.det(sigma) ** -0.5) * math.exp(c)
 
     return prob
 # Classify input vector x into one of the three classes using Quadratic Discriminant Analysis (QDA) by default
 # LDA=True to use Linear Discriminant Analysis instead
 def classify(x, LDA_flag, force_diagonal=False):
+    global sigma1, sigma2, sigma3
     if LDA_flag:
         avg_sigma = (sigma1 + sigma2 + sigma3)/3
         # Force sigma to be a diagonal matrix
         if force_diagonal:
+            # TODO: Figure this out
             for i in range(len(avg_sigma)):
                 for j in range(len(avg_sigma[i])):
                     if i != j:
                         avg_sigma[i][j] = 0
-
+            # avg_sigma = np.diag(np.diag(avg_sigma))
         c1 = gaussian_pdf(x, mu1, avg_sigma)
         c2 = gaussian_pdf(x, mu2, avg_sigma)
         c3 = gaussian_pdf(x, mu3, avg_sigma)
     else:
         # Force sigma to be a diagonal matrix (all sigmas should be same shape)
         if force_diagonal:
+            y = np.diag(np.diag(sigma1))
             for i in range(len(sigma1)):
                 for j in range(len(sigma1[i])):
                     if i != j:
                         sigma1[i][j] = 0
                         sigma2[i][j] = 0
                         sigma3[i][j] = 0
+            # print "sigma1"
+            # print sigma1
+            # print "y"
+            # print y
+            # sigma1 = np.diag(np.diag(sigma1))
+            # sigma2 = np.diag(np.diag(sigma2))
+            # sigma3 = np.diag(np.diag(sigma1))
 
         c1 = gaussian_pdf(x, mu1, sigma1)
         c2 = gaussian_pdf(x, mu2, sigma2)
@@ -199,9 +215,12 @@ def evaluate_model(LDA_flag, force_diagonal=False):
 
 
 if __name__ == "__main__":
-    num_feat = 4
-    data = process_data_set()
-    print data
+    num_feat = 3
+    data = process_data_set(use_cols=(0, 1, 2, 3))
+
+    assert(len(data["setosa"]["training"]) == len(data["versicolor"]["training"]) == len(data["virginica"]["training"]))
+    assert(len(data["setosa"]["testing"]) == len(data["versicolor"]["testing"]) == len(data["virginica"]["testing"]) == 10)
+
     ## TRAINING
     mu1, sigma1 = train(data["setosa"]["training"])
     mu2, sigma2 = train(data["versicolor"]["training"])
@@ -211,5 +230,5 @@ if __name__ == "__main__":
     evaluate_model(LDA_flag=False) # QDA
     evaluate_model(LDA_flag=True) # LDA
     # Force covariance matrix to a diagonal matrix
-    evaluate_model(LDA_flag=False, force_diagonal=True) # QDA
-    evaluate_model(LDA_flag=True, force_diagonal=True) # LDA
+    # evaluate_model(LDA_flag=False, force_diagonal=True) # QDA
+    # evaluate_model(LDA_flag=True, force_diagonal=True) # LDA
