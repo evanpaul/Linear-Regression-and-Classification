@@ -1,8 +1,4 @@
 #!/usr/bin/python
-#########################
-# Homework 2: QDA & LDA #
-# Evan Paul             #
-#########################
 import math
 import numpy as np
 
@@ -134,7 +130,8 @@ def classify(x, LDA_flag, force_diagonal=False):
         iris = "NULL"
 
     return iris
-
+# Run classifications and calculate error rates
+# If LDA_flag=true, linear separability will be tested
 def evaluate_model(LDA_flag, force_diagonal=False):
     print "=" * 60 # Separator for clarity in stdout
     if LDA_flag:
